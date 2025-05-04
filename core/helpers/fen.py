@@ -1,0 +1,46 @@
+
+from engine.piece import Piece                                                                                                # Example FENs "rnbqkbnr/pp1ppppp/8/2p5/4P3/8/PPPP1PPP/RNBQKBNR w KQkq c6 0 2"
+
+def loadFEN( board):
+    start_FEN = "pn7/8/8/2p5/4P3/8/PPP5/6N1 w KQkq c6 0 2"
+
+    parts = start_FEN.strip().split()                                   # Splitting the FEN string into it's parts 
+                                                                        
+    piece_placement = parts[0]                                  
+    active_color = parts[1] if len(parts) > 1 else 'w'
+    castling_rights = parts[2] if len(parts) > 2 else '-'
+    en_passant = parts[3] if len(parts) > 3 else '-'
+    halfmove_clock = int(parts[4]) if len(parts) > 4 else 0
+    fullmove_number = int(parts[5]) if len(parts) > 5 else 1
+
+
+    rows = piece_placement.split("/")                           # List with pieces ["rnbkqr","pp1ppp",....] seperated by /
+    square_index = 0
+
+    for fen_rank_index in range(8):
+        rank = 7 - fen_rank_index
+        file = 0
+        for char in rows[fen_rank_index]:               
+            if char.isdigit():                                  # If there is a digit (Blank space in FEN notation) skip those files
+                file += int(char)
+            else:
+                piece = Piece().symbolToPiece(char)             # If there is a piece character transform char to interior piece notation (integer)
+                square_index = rank * 8 + file
+                board.setPiece(square_index, piece)             # Give the piece and its square index to board.setPiece
+                file += 1
+
+    board.gamestate.active_color = 0 if active_color == 'w' else 1
+    board.gamestate.white_kingsidecastle_rights = 'K' in castling_rights
+    board.gamestate.white_queensidecastle_rights = 'Q' in castling_rights
+    board.gamestate.black_kingsidecastle_rights = 'k' in castling_rights
+    board.gamestate.black_queensidecastle_rights = 'q' in castling_rights
+    board.gamestate.enpassant_square = algebraicToIndex(en_passant) if en_passant != '-' else None
+    board.gamestate.halfmoves = int(halfmove_clock)
+    board.gamestate.fullmoves = int(fullmove_number)
+    
+def algebraicToIndex(square):                                   # Transforms the algebraic notation of a square from FEN String to internal notation (0-63) # For en passant squares
+    if len(square) != 2:
+        return None
+    file = ord(square[0]) - ord('a')
+    rank = 8 - int(square[1])
+    return rank * 8 + file        
