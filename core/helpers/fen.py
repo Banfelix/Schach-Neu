@@ -2,7 +2,7 @@
 from engine.piece import Piece                                                                                                # Example FENs "rnbqkbnr/pp1ppppp/8/2p5/4P3/8/PPPP1PPP/RNBQKBNR w KQkq c6 0 2" ,"pn7/8/8/2p5/4P3/8/PPP5/6N1 w KQkq c6 0 2"
 
 def loadFEN(board):
-    start_FEN = "8/8/8/2p3p1/4P3/8/PPP5/2P3R1 w KQkq c6 0 2"
+    start_FEN = "6nR/3P4/7N/pP6/8/8/4P3/8 w KQkq a6 0 2"
 
     parts = start_FEN.strip().split()                                   # Splitting the FEN string into it's parts 
                                                                         
@@ -38,9 +38,10 @@ def loadFEN(board):
     board.gamestate.halfmoves = int(halfmove_clock)
     board.gamestate.fullmoves = int(fullmove_number)
     
-def algebraicToIndex(square):                                   # Transforms the algebraic notation of a square from FEN String to internal notation (0-63) # For en passant squares
+def algebraicToIndex(square):
     if len(square) != 2:
         return None
     file = ord(square[0]) - ord('a')
-    rank = 8 - int(square[1])
-    return rank * 8 + file        
+    rank = int(square[1]) - 1
+    return rank * 8 + file
+      

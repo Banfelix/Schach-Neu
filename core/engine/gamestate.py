@@ -15,5 +15,5 @@ class GameState:
         self.black_queensidecastle_rights = False               # Gets updated during the game only checks if pieces havent been moved
         self.black_kingsidecastle_rights = False                # Gets updated during the game only checks if pieces havent been moved
     
-        self.enpassant_square = None                            # Gets updated during the game after a double pawn push
+        self.enpassant_square = None                            # Gets updated during the game after a double pawn push         # Needs to be None if there are none
 
