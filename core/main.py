@@ -1,7 +1,6 @@
 
 from engine.board import Board
 from helpers.inputs import inputHandler
-from movegeneration.movegenerator import MoveGenerator
 from debugs import moveToAlgebraic
 
 def main():

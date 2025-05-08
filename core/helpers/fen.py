@@ -2,7 +2,7 @@
 from engine.piece import Piece                                                                                                # Example FENs "rnbqkbnr/pp1ppppp/8/2p5/4P3/8/PPPP1PPP/RNBQKBNR w KQkq c6 0 2" ,"pn7/8/8/2p5/4P3/8/PPP5/6N1 w KQkq c6 0 2"
 
 def loadFEN(board):
-    start_FEN = "6nR/3P4/7N/pP6/8/8/4P3/8 w KQkq a6 0 2"
+    start_FEN = "1b4nR/3P4/7N/pP6/1B6/r7/4P3/8 w KQkq a6 0 2"
 
     parts = start_FEN.strip().split()                                   # Splitting the FEN string into it's parts 
                                                                         

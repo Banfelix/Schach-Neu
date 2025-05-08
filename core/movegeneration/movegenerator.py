@@ -1,8 +1,9 @@
 
+from movegeneration.precomputations.bishoplookup import bishop_moves_lookup
 from movegeneration.precomputations.rooklookup import rook_moves_lookup
-from movegeneration.precomputations.magics import rook_magics, rook_shifts
-from movegeneration.precomputations.movemasks import rook_moves_mask
-from engine.move import Move
+from movegeneration.precomputations.magics import rook_magics, rook_shifts, bishop_magics, bishop_shifts
+from movegeneration.precomputations.movemasks import rook_moves_mask, bishop_moves_mask
+from engine.move import Move    
 
 class MoveGenerator:
     def __init__(self, board):
@@ -11,12 +12,16 @@ class MoveGenerator:
         
         self.empty_squares_bb = self.getEmptySquaresBB()
         self.all_occupancies_bb = self.allied_occupancies_bb | self.ennemy_occupancies_bb
+        self.ennemy_attacks_bb = 0
 
         self.second_row_mask = 0xFF00
         self.seventh_row_mask = 0x00FF000000000000
 
         self.getRookMoves(board)
         self.getPawnMoves(board)
+        self.getBishopMoves(board)
+
+        print("Ennemy Attacks BB", self.ennemy_attacks_bb)
 
     def getAlliedOccupanciesBB(self, board):
         allied_occupancies_bb = 0
@@ -38,32 +43,44 @@ class MoveGenerator:
         emtpy_squares_bb = ~self.allied_occupancies_bb & ~self.ennemy_occupancies_bb
         return emtpy_squares_bb
     
+    def getSliderBB(self, start_square, magics, shifts, move_mask, lookup_table):
+        relevant_occupancies = self.all_occupancies_bb & move_mask[start_square]
+        magic_index = (relevant_occupancies * magics[start_square]) >> shifts[start_square]
+        move_bb = lookup_table[start_square].get(magic_index, 0)        
+        return move_bb
+    
+    def bitboardToMove(self, legal_moves_bb, board, start_square):
+        while legal_moves_bb:
+            lsb = legal_moves_bb & -legal_moves_bb                                                                   # Isolates the LSB
+            target_square = lsb.bit_length() - 1                                                                     # Get "pos" of LSB (so the index)
+            board.legal_moves.append(Move(start_square, target_square).createEngineMove(Move.no_flags))
+            legal_moves_bb &= legal_moves_bb - 1                                                                     # clear the LSB, the loop restarts
+
+    def finaliser(self, board, piece, start_square, move_bb):
+        if (board.piece.getPieceColor(piece) != board.gamestate.active_color):
+            legal_attacks_bb = move_bb & ~self.ennemy_occupancies_bb
+            self.ennemy_attacks_bb |= legal_attacks_bb
+        else:
+            legal_moves_bb = move_bb & ~self.allied_occupancies_bb
+            self.bitboardToMove(legal_moves_bb, board, start_square)       
+
     ############################################################################################################################################
     def getRookMoves(self, board):
-        rook_moves_bb = {}                          # For Bugfixing
         for piece, piecelist in board.piecelists.items():
-            # Filter only allied rooks
-            if (board.piece.getPieceColor(piece) == board.gamestate.active_color and 
-                board.piece.getPieceType(piece) == board.piece.rook):
-
+            if board.piece.getPieceType(piece) == board.piece.rook:
                 for i in range(piecelist.num_pieces):
                     start_square = piecelist.occupied_squares[i]
+                    move_bb = self.getSliderBB(start_square, rook_magics, rook_shifts, rook_moves_mask, rook_moves_lookup)
+                    self.finaliser(board, piece, start_square, move_bb)
 
-                    # Compute magic index
-                    occupancies = self.all_occupancies_bb
-                    relevant_occupancies = occupancies & rook_moves_mask[start_square]
-                    magic_index = (relevant_occupancies * rook_magics[start_square]) >> rook_shifts[start_square]
-                    move_bb = rook_moves_lookup[start_square].get(magic_index, 0)
-                    
-                    # Mask out allied squares
-                    legal_moves_bb = move_bb & ~self.allied_occupancies_bb
-                    rook_moves_bb[start_square] = legal_moves_bb    # Keep for now for bugfixing    # {square: legal moves bb}
 
-                    while legal_moves_bb:
-                        lsb = legal_moves_bb & -legal_moves_bb                                                                   # Isolates the LSB
-                        target_square = lsb.bit_length() - 1                                                                     # Get "pos" of LSB (so the index)
-                        board.legal_moves.append(Move(start_square, target_square).createEngineMove(Move.no_flags))
-                        legal_moves_bb &= legal_moves_bb - 1                                                                     # clear the LSB, the loop restarts
+    def getBishopMoves(self, board):
+        for piece, piecelist in board.piecelists.items():
+            if board.piece.getPieceType(piece) == board.piece.bishop:
+                for i in range(piecelist.num_pieces):
+                    start_square = piecelist.occupied_squares[i]
+                    move_bb = self.getSliderBB(start_square, bishop_magics, bishop_shifts, bishop_moves_mask, bishop_moves_lookup)
+                    self.finaliser(board, piece, start_square, move_bb)
 
 
     def getPawnMoves(self, board):
