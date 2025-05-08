@@ -10,9 +10,10 @@ class Move:
     knight_promotion_flag = 0b0110
     queen_promotion_flag =  0b0111
 
-    start_sq_mask = 0b0000000000111111
-    end_sq_mask =   0b0000111111000000
-    flag_mask =     0b1111000000000000
+    start_sq_mask =  0b0000000000111111
+    end_sq_mask =    0b0000111111000000
+    flag_mask =      0b1111000000000000
+    promotion_mask = 0b0100000000000000
 
     def __init__(self, start, end):
         self.move_value = None
@@ -27,11 +28,33 @@ class Move:
             'q': self.queen_promotion_flag}
 
 
-    def createPlayerMove(self, promotion_char=None):
+    def createPlayerMove(self,board, promotion_char=None,):
         flag = self.flag_lookup.get(promotion_char)
         self.move_value = (flag << 12) | (self.end_sq << 6) | self.start_sq
+        self.move_value = self.legalityCheck(board)
         return self.move_value
 
     def createEngineMove(self, flag):
         self.move_value = (flag << 12) | (self.end_sq << 6) | self.start_sq
         return self.move_value
+    
+    def legalityCheck(self, board):
+        # Check if promotion flag is set
+        is_promotion = (self.move_value & self.promotion_mask) != 0
+
+        if is_promotion:
+            # Compare full move (with flags) to legal moves
+            if self.move_value in board.legal_moves:
+                return self.move_value
+            else:
+                print("Illegal promotion move.")
+                return None
+        else:
+            # Mask out promotion/castling flags → compare just move coords
+            masked_move = self.move_value & ~(self.flag_mask)
+            
+            for legal_move in board.legal_moves:
+                if (legal_move & ~(self.flag_mask)) == masked_move:
+                    return legal_move  # Return matching legal move
+            print("Illegal move.")
+            return None

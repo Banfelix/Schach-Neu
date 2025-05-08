@@ -15,6 +15,8 @@ class MoveGenerator:
         self.second_row_mask = 0xFF00
         self.seventh_row_mask = 0x00FF000000000000
 
+        self.getRookMoves(board)
+        self.getPawnMoves(board)
 
     def getAlliedOccupanciesBB(self, board):
         allied_occupancies_bb = 0
@@ -58,10 +60,11 @@ class MoveGenerator:
                     rook_moves_bb[start_square] = legal_moves_bb    # Keep for now for bugfixing    # {square: legal moves bb}
 
                     while legal_moves_bb:
-                        lsb = legal_moves_bb & -legal_moves_bb
-                        target_square = lsb.bit_length() - 1
+                        lsb = legal_moves_bb & -legal_moves_bb                                                                   # Isolates the LSB
+                        target_square = lsb.bit_length() - 1                                                                     # Get "pos" of LSB (so the index)
                         board.legal_moves.append(Move(start_square, target_square).createEngineMove(Move.no_flags))
-                        legal_moves_bb &= legal_moves_bb - 1  # clear the bit
+                        legal_moves_bb &= legal_moves_bb - 1                                                                     # clear the LSB, the loop restarts
+
 
     def getPawnMoves(self, board):
         pawn_moves_bb = {}  # For bugfixing

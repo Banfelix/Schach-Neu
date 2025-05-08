@@ -2,7 +2,7 @@ from engine.piece import Piece
 from engine.piecelist import PieceList  
 from engine.gamestate import GameState
 from helpers.fen import loadFEN
-
+from movegeneration.movegenerator import MoveGenerator
 
 class Board:
     def __init__(self):
@@ -30,6 +30,11 @@ class Board:
 
     def loadGame(self):
         loadFEN(self)
+
+    def loadLegalMoves(self):
+        self.legal_moves.clear()
+        MoveGenerator(self)
+
 
     def printBoard(self):
         for rank in range(7, -1, -1):  

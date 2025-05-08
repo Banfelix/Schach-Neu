@@ -22,4 +22,4 @@ def moveToAlgebraic(move_value):
     notation = squareToCoord(start_sq) + squareToCoord(end_sq)
     if flag in promo_map:
         notation += promo_map[flag]
-    print(notation)
+    return notation

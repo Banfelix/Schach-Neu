@@ -10,7 +10,7 @@ def inputHandler(board):
         print("Invalid command format. Please try again.")
     else:
         print("Valid move input. (Legality not yet checked)")
-        return moveParser(command)
+        return moveParser(command, board)
     
 def isValidMoveFormat(command):                            
     if len(command) != 5 and len(command) != 4:
@@ -32,7 +32,7 @@ def validPromotion(command):
         return False
     return True
 
-def moveParser(move):
+def moveParser(move, board):
     file_from = ord(move[0]) - ord('a')
     rank_from = int(move[1]) - 1
     file_to = ord(move[2]) - ord('a')
@@ -40,5 +40,5 @@ def moveParser(move):
     promotion_flag = move[4] if len(move) == 5 else None
     startsquare = rank_from * 8 + file_from
     endsquare = rank_to * 8 + file_to
-    parsed_move = Move(startsquare, endsquare).createPlayerMove(promotion_flag)
+    parsed_move = Move(startsquare, endsquare).createPlayerMove(board, promotion_flag)
     return parsed_move
