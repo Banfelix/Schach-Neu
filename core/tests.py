@@ -1,8 +1,8 @@
 
 
 def bitboardToChessboard(bb):
-    for rank in reversed(range(8)):  # print from rank 8 to 1
-        row = ""
+    for rank in range(7, -1, -1):  # rank 8 to 1
+        row = f"{rank + 1}    "    # row label
         for file in range(8):
             square_index = rank * 8 + file
             if (bb >> square_index) & 1:
@@ -10,7 +10,9 @@ def bitboardToChessboard(bb):
             else:
                 row += "- "
         print(row)
+    print("\n     a b c d e f g h")
+
 
 
         
-bitboardToChessboard(1416240266379521)
+bitboardToChessboard(1438234894565673)
