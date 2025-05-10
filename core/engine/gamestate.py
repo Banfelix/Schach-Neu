@@ -2,9 +2,9 @@
 
 class GameState:
     def __init__(self):
-        self.running = True            # To know when to end the programm
-        self.halfmoves = 0          # One Fullmove is two halfmoves             # Gets updated during the game
-        self.fullmoves = 0          # One Fullmove is white + black             # Gets updated during the game
+        self.running = True              # To know when to end the programm
+        self.halfmoves = 0               # One Fullmove is two halfmoves             # Gets updated during the game
+        self.fullmoves = 0               # One Fullmove is white + black             # Gets updated during the game
         
         self.white_color = 0
         self.black_color = 8

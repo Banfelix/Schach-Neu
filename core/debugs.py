@@ -1,4 +1,4 @@
-def moveToAlgebraic(move_value):
+def moveToAlgebraic(move_value):                                    # Used to print the legal moves as start -> end square for eg.: e1d1 
     start_sq_mask = 0b0000000000111111
     end_sq_mask   = 0b0000111111000000
     flag_mask     = 0b1111000000000000

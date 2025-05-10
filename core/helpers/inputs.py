@@ -1,7 +1,7 @@
 
 from engine.move import Move
 
-def inputHandler(board):
+def inputHandler(board):                                                                   # Check for the correct input notation
     command = input("Give Command like a2a4q or stop: ")
     if command == "stop":
         board.gamestate.running = False
@@ -32,7 +32,7 @@ def validPromotion(command):
         return False
     return True
 
-def moveParser(move, board):
+def moveParser(move, board):                                                                    # Changes the input to a move
     file_from = ord(move[0]) - ord('a')
     rank_from = int(move[1]) - 1
     file_to = ord(move[2]) - ord('a')

@@ -1,6 +1,6 @@
 
-
-def bitboardToChessboard(bb):
+                                                
+def bitboardToChessboard(bb):                                   # Helper stuff, prints out a the bitboard corresponding to an integer, for ease of visualisation
     for rank in range(7, -1, -1):  # rank 8 to 1
         row = f"{rank + 1}    "    # row label
         for file in range(8):
@@ -15,4 +15,4 @@ def bitboardToChessboard(bb):
 
 
         
-bitboardToChessboard(1438234894565673)
+bitboardToChessboard( 16212923956949443169)
