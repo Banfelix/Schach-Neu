@@ -14,6 +14,7 @@ def main():
         if move is not None:
             print("Legal move", move)
             print("make the move, update boardstate")
+            board.makeMove(move)
         else:
             print("Illegal move, try again.")
 

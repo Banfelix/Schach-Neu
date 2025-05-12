@@ -1,6 +1,7 @@
 from engine.piece import Piece
 from engine.piecelist import PieceList  
 from engine.gamestate import GameState
+from engine.move import Move
 from helpers.fen import loadFEN
 from movegeneration.movegenerator import MoveGenerator
 
@@ -57,17 +58,92 @@ class Board:
         if piece != self.piece.nopiece:
             self.piecelists[piece].addPiece(square)
 
-    def makeMove(self, move):
-        moving_piece = self.board[move.start_square]                                                                   # Get the int of the moving piece and captured piece -> see Pieces for more
-        captured_piece = self.board[move.end_square]    
-        
-        if captured_piece != self.piece.nopiece:
-            self.piecelists[captured_piece].removePiece(move.end_square)                                               # Remove captured piece
-        
-        self.piecelists[moving_piece].removePiece(move.start_square)                                                   # Update piecelists: move the moving piece
-        self.piecelists[moving_piece].addPiece(move.end_square)
+    def castleMoveRook(self, from_sq, to_sq):
+        rook = self.board[from_sq]
+        self.board[to_sq] = rook
+        self.board[from_sq] = self.piece.nopiece
+        self.piecelists[rook].movePiece(from_sq, to_sq)
 
-        self.board[move.end_square] = moving_piece                                                                     # Update The board for visual representation
-        self.board[move.start_square] = self.piece.nopiece
+    def enPassantHandler(self, moving_piece, end_square):
+        if self.piece.getPieceColor(moving_piece) == self.piece.white:
+            capture_square = end_square - 8
+            print("Capture_square:", capture_square)
+        else:
+            capture_square = end_square + 8
+        captured_piece = self.board[capture_square]
+        self.board[capture_square] = self.piece.nopiece
+        self.piecelists[captured_piece].removePiece(capture_square)
+    
+    def castleHandler(self, end_square):
+        if end_square == 6:   # White kingside
+            self.castleMoveRook(7, 5)
+        elif end_square == 2: # White queenside
+            self.castleMoveRook(0, 3)
+        elif end_square == 62:  # Black kingside
+                self.castleMoveRook(63, 61)
+        elif end_square == 58:  # Black queenside
+                self.castleMoveRook(56, 59)  
+
+    def promotionHandler(self, moving_piece, start_square, end_square, flag):
+        color = self.piece.getPieceColor(moving_piece)
+        if flag == Move.rook_promotion_flag:
+            promoted = self.piece.whiterook if color == self.piece.white else self.piece.blackrook
+        elif flag == Move.bishop_promotion_flag:
+            promoted = self.piece.whitebishop if color == self.piece.white else self.piece.blackbishop
+        elif flag == Move.knight_promotion_flag:
+            promoted = self.piece.whiteknight if color == self.piece.white else self.piece.blackknight
+        elif flag == Move.queen_promotion_flag:
+            promoted = self.piece.whitequeen if color == self.piece.white else self.piece.blackqueen
+
+            self.piecelists[moving_piece].removePiece(start_square)
+            self.piecelists[promoted].addPiece(end_square)
+            self.board[end_square] = promoted
+            self.board[start_square] = self.piece.nopiece        
+
+    def doublePushHandler(self, moving_piece, end_square):
+        if self.piece.getPieceColor(moving_piece) == self.piece.white:
+            self.gamestate.enpassant_square = end_square - 8
+        else:
+            self.gamestate.enpassant_square = end_square + 8
+
+
+
+    def makeMove(self, move):
+        start_square, end_square, flag = Move.moveDecode(move)
+        moving_piece = self.board[start_square]
+        captured_piece = self.board[end_square]
         
-        self.gamestate.active_color ^= 1                                                                               # Change side to play
+        if flag == Move.en_passant_flag:
+            self.enPassantHandler(moving_piece, end_square)
+        elif captured_piece != self.piece.nopiece:
+            self.piecelists[captured_piece].removePiece(end_square)
+
+        if flag == Move.double_push_flag:
+            self.doublePushHandler(moving_piece, end_square)
+        else:
+            self.gamestate.enpassant_square = None
+        
+        if flag == Move.castling_flag:
+            self.castleHandler(end_square)
+
+        
+        if flag in {
+            Move.rook_promotion_flag, Move.bishop_promotion_flag,
+            Move.knight_promotion_flag, Move.queen_promotion_flag
+        }:
+            self.promotionHandler(moving_piece, start_square, end_square, flag)
+        
+        else:
+            
+            self.piecelists[moving_piece].removePiece(start_square)
+            self.piecelists[moving_piece].addPiece(end_square)
+            self.board[end_square] = moving_piece
+            self.board[start_square] = self.piece.nopiece
+
+
+
+        if self.gamestate.active_color == 0:
+            self.gamestate.active_color = 8
+        else:
+            self.gamestate.active_color = 0
+        self.printBoard()

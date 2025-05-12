@@ -1,1 +1,9 @@
 .vscode/
+
+core/__pycache__/debugs.cpython-39.pyc
+core/engine/__pycache__/gamestate.cpython-39.pyc
+core/engine/__pycache__/move.cpython-39.pyc
+core/helpers/__pycache__/fen.cpython-39.pyc
+core/helpers/__pycache__/inputs.cpython-39.pyc
+core/movegeneration/__pycache__/movegenerator.cpython-39.pyc
+core/movegeneration/precomputations/__pycache__/movemasks.cpython-39.pyc

@@ -17,8 +17,8 @@ class Move:
 
     def __init__(self, start, end):
         self.move_value = None
-        self.start_sq = start
-        self.end_sq = end
+        self.start_square = start
+        self.end_square = end
 
         self.flag_lookup = {
             None: self.no_flags,
@@ -30,12 +30,12 @@ class Move:
 
     def createPlayerMove(self,board, promotion_char=None,):                             # A bit of extra logic for promotions
         flag = self.flag_lookup.get(promotion_char)
-        self.move_value = (flag << 12) | (self.end_sq << 6) | self.start_sq
+        self.move_value = (flag << 12) | (self.end_square << 6) | self.start_square
         self.move_value = self.legalityCheck(board)
         return self.move_value
 
     def createEngineMove(self, flag):                                                   # Flag setting is handled in movegeneration
-        self.move_value = (flag << 12) | (self.end_sq << 6) | self.start_sq
+        self.move_value = (flag << 12) | (self.end_square << 6) | self.start_square
         return self.move_value
     
     def legalityCheck(self, board):
@@ -54,3 +54,10 @@ class Move:
                     return legal_move                                                   # Return matching legal move in internal notation, with all correct flags
             print("Illegal move.")
             return None
+
+    @staticmethod
+    def moveDecode(encoded_move):
+        start_square = encoded_move & Move.start_sq_mask
+        end_square = (encoded_move & Move.end_sq_mask) >> 6
+        flag = (encoded_move & Move.flag_mask) >> 12
+        return start_square, end_square, flag 

@@ -149,36 +149,49 @@ class MoveGenerator:
                             legal_moves_bb &= legal_moves_bb - 1  
 
     def getKingMoves(self, board):
+        if board.gamestate.active_color == 0:  # white
+            empty_kingside_mask = 0b110
+            kingside_danger_squares_mask = 0b1110
+            empty_queenside_mask = 0b1110000
+            queenside_danger_squares_mask =0b1111000
+            kingside_rigths = board.gamestate.white_kingsidecastle_rights
+            queenside_rigths = board.gamestate.white_queensidecastle_rights
+        else:
+            empty_kingside_mask = 0x6000000000000000
+            kingside_danger_squares_mask = 0x7000000000000000 
+            empty_queenside_mask = 0x70000000000000
+            queenside_danger_squares_mask = 78000000000000
+            kingside_rigths = board.gamestate.black_kingsidecastle_rights
+            queenside_rigths = board.gamestate.black_queensidecastle_rights
+        
+        
         for piece, piecelist in board.piecelists.items():
+            if board.piece.getPieceType(piece) == board.piece.king and (board.piece.getPieceColor(piece) != board.gamestate.active_color):
+                for i in range(piecelist.num_pieces):
+                    start_square = piecelist.occupied_squares[i]
+                    king_moves_bb = king_moves_mask[start_square] 
+                    self.ennemy_attacks_bb |= king_moves_bb        
+                    
+        for piece, piecelist in board.piecelists.items():    
             if board.piece.getPieceType(piece) == board.piece.king:
                 for i in range(piecelist.num_pieces):
                     start_square = piecelist.occupied_squares[i]
                     king_moves_bb = king_moves_mask[start_square] & ~self.allied_occupancies_bb & ~self.ennemy_attacks_bb
-                    self.bitboardToMove(king_moves_bb, board, start_square)                                                     # Create the moves for non-castles
-                    if board.gamestate.active_color == 0:  # white
-                        empty_kingside_mask = 0b110
-                        kingside_danger_squares_mask = 0b1110
-                        empty_queenside_mask = 0b1110000
-                        queenside_danger_squares_mask =0b1111000
-                        kingside_rigths = board.gamestate.white_kingsidecastle_rights
-                        queenside_rigths = board.gamestate.white_queensidecastle_rights
-                    else:
-                        empty_kingside_mask = 0x6000000000000000
-                        kingside_danger_squares_mask = 0x7000000000000000 
-                        empty_queenside_mask = 0x70000000000000
-                        queenside_danger_squares_mask = 78000000000000
-                        kingside_rigths = board.gamestate.white_kingsidecastle_rights
-                        queenside_rigths = board.gamestate.white_queensidecastle_rights
-                        
-                    if kingside_rigths:                                                                                         # Check if the neccessary squares are empty and not attacked
-                        if (self.empty_squares_bb & empty_kingside_mask) == empty_kingside_mask:                                # If legal, create the castle move
-                            if not (self.ennemy_attacks_bb & kingside_danger_squares_mask):  
-                                move_obj = Move(start_square, start_square + 2)  
-                                encoded = move_obj.createEngineMove(Move.castling_flag)
-                                board.legal_moves.append(encoded)
-                    if queenside_rigths:
-                        if (self.empty_squares_bb & empty_queenside_mask) == empty_queenside_mask:  
-                            if not (self.ennemy_attacks_bb & queenside_danger_squares_mask):  
-                                move_obj = Move(start_square, start_square - 2)  
-                                encoded = move_obj.createEngineMove(Move.castling_flag)
-                                board.legal_moves.append(encoded)
+
+                    self.finaliser(board, piece, start_square, king_moves_bb)                                                     # Create the moves for non-castles
+
+                    if (board.piece.getPieceColor(piece) == board.gamestate.active_color):    
+                        if kingside_rigths:                                                                                         # Check if the neccessary squares are empty and not attacked
+                            if (self.empty_squares_bb & empty_kingside_mask) == empty_kingside_mask:                                # If legal, create the castle move
+                                if not (self.ennemy_attacks_bb & kingside_danger_squares_mask):  
+                                    move_obj = Move(start_square, start_square + 2)  
+                                    encoded = move_obj.createEngineMove(Move.castling_flag)
+                                    board.legal_moves.append(encoded)
+                        if queenside_rigths:
+                            if (self.empty_squares_bb & empty_queenside_mask) == empty_queenside_mask:  
+                                if not (self.ennemy_attacks_bb & queenside_danger_squares_mask):  
+                                    move_obj = Move(start_square, start_square - 2)  
+                                    encoded = move_obj.createEngineMove(Move.castling_flag)
+                                    board.legal_moves.append(encoded)
+
+
