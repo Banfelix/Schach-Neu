@@ -26,9 +26,6 @@ class Piece:
         self.blackrook = self.rook | self.black         #12
         self.blackqueen = self.queen | self.black       #13
         self.blackking = self.king | self.black         #14
-
-        self.pieces = [self.whitepawn, self.whiteknight, self.whitebishop, self.whiterook, self.whitequeen, self.whiteking,
-                       self.blackpawn, self.blackknight, self.blackbishop, self.blackrook, self.blackqueen, self.blackking]
         
         self.typemask = 0b0111
         self.colormask = 0b1000
@@ -68,3 +65,11 @@ class Piece:
         else: return None
         return type | color
 
+    def isDiagonalSlider(self, piece):
+        return self.getPieceType(piece) in (self.bishop, self.queen)
+
+    def isOrthogonalSlider(self, piece):
+        return self.getPieceType(piece) in (self.rook, self.queen)
+
+    def isSlidingPiece(self, piece):
+        return self.isDiagonalSlider(piece) | self.isOrthogonalSlider(piece)

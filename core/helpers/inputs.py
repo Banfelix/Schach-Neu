@@ -5,7 +5,7 @@ def inputHandler(board):                                                        
     command = input("Give Command like a2a4q or stop: ")
     if command == "stop":
         board.gamestate.running = False
-        return
+        return False
     elif not isValidMoveFormat(command): 
         print("Invalid command format. Please try again.")
     else:
@@ -42,3 +42,16 @@ def moveParser(move, board):                                                    
     endsquare = rank_to * 8 + file_to
     parsed_move = Move(startsquare, endsquare).createPlayerMove(board, promotion_flag)
     return parsed_move
+
+def getPlayerColor():
+    valid = False
+    while not valid:
+        choice = input("Play as White ? (Y / N) ")
+        if choice == "Y":
+            choice = 0
+            valid = True
+        if choice == "N":
+            choice = 8
+            valid = True
+
+    return choice

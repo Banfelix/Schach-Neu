@@ -14,13 +14,13 @@ class PieceList:                                                                
         self.map[square] = self.num_pieces                                                      # Sets the index of map (the square-th entry) to the number of pieces, as this represents the index in occupied_squares
         self.num_pieces += 1                                                                    # Set the new amount of those pieces
 
-    def removePiece(self, square):                                                             # To remove a piece
+    def removePiece(self, square):                                                              # To remove a piece
         piece_index = self.map[square]                                                          # Get the pieces index is in occupied_squares
         self.occupied_squares[piece_index] = self.occupied_squares[self.num_pieces - 1]         # Replace square on which there is not a pice anmyore with the current last entry thats not garbage
         self.map[self.occupied_squares[piece_index]] = piece_index                              # Update the map, as an occupied square has changed its index in occupied_squares
         self.num_pieces -= 1                                                                    # Update the amount of those pieces that are on the board, ie up to which index occupied_squares is not garbage
 
-    def movePiece(self, start_square, target_square):                                          # To change the square on which a piece is 
+    def movePiece(self, start_square, target_square):                                           # To change the square on which a piece is 
         piece_index = self.map[start_square]                                                    # Get the pieces index is in occupied_squares 
         self.occupied_squares[piece_index] = target_square                                      # Replace the old square Nr with the new one in occupied_squares (no chabnge of index here)     
         self.map[target_square] = piece_index                                                   # Update the map. No need to clear 
