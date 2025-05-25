@@ -337,5 +337,6 @@ class MoveGenerator:
     
 
     def en_passant_check_evasion(self, start_square, target_square, direction):
-        if self.checkers[0] == self.board.gamestate.enpassant_square - direction or (1 << self.board.gamestate.enpassant_square) & self.check_ray != 0:
-            return True         # If a pawn is chekcing the king after adoublle push or an en passant capture would block a check ray returns true
+        if len(self.checkers) == 1:
+            if self.checkers[0] == self.board.gamestate.enpassant_square - direction or (1 << self.board.gamestate.enpassant_square) & self.check_ray != 0:
+                return True         # If a pawn is chekcing the king after adoublle push or an en passant capture would block a check ray returns true

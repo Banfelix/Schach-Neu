@@ -13,6 +13,7 @@ class Board:
         self.board = [self.piece.nopiece] * 64
         self.legal_moves = []
         self.piece_count = 0
+        self.move_history = []
 
         self.piecelists = {p: PieceList() for p in [
             self.piece.whitepawn, self.piece.whiteknight, self.piece.whitebishop,
@@ -31,6 +32,11 @@ class Board:
             arbiterChecks(self)
 
     def printBoard(self):
+        debug_info = [self.gamestate.fullmoves, self.gamestate.halfmoves, len(self.legal_moves), 
+                    self.gamestate.white_kingsidecastle_rights, self.gamestate.white_queensidecastle_rights, self.gamestate.black_kingsidecastle_rights,
+                    self.gamestate.black_queensidecastle_rights,"debug info"]
+        debug_info_name = ["fullmoves: ", "halfmoves: ", "number of legal moves: ", "WK castleright: ","WQ castleright: ","BK castleright: ","BQ castleright: ","debug info"]
+        i = 0
         for rank in range(7, -1, -1):
             row = f"{rank + 1}    "
             for file in range(8):
@@ -38,8 +44,9 @@ class Board:
                 piece = self.board[idx]
                 symbol = self.piece.pieceToSymbol(piece) if piece else "-"
                 row += symbol + " "
-            print(row)
-        print("\n    a b c d e f g h")
+            print(row, "    ",debug_info_name[i], debug_info[i])
+            i += 1
+        print("\n     a b c d e f g h")
 
     def setPiece(self, square, piece):
         old_piece = self.board[square]
@@ -55,6 +62,21 @@ class Board:
         moving_piece = self.board[start_square]
         captured_piece = self.board[end_square]
 
+        self.move_history.append({
+            "move": move,
+            "moved_piece": moving_piece,
+            "captured_piece": captured_piece,
+            "active_color": self.gamestate.active_color,
+            "inactive_color": self.gamestate.inactive_color,
+            "enpassant_square": self.gamestate.enpassant_square,
+            "castling_rights": (
+                self.gamestate.white_kingsidecastle_rights,
+                self.gamestate.white_queensidecastle_rights,
+                self.gamestate.black_kingsidecastle_rights,
+                self.gamestate.black_queensidecastle_rights),
+            "halfmove_clock": self.gamestate.halfmoves,
+            "fullmove_clock": self.gamestate.fullmoves})
+
         self.updateCastlingRights(moving_piece, start_square)
 
         if flag == Move.en_passant_flag:
@@ -69,6 +91,10 @@ class Board:
 
         if flag == Move.castling_flag:
             self.castleHandler(end_square)
+            self.piecelists[moving_piece].movePiece(start_square, end_square)
+            self.board[end_square] = moving_piece
+            self.board[start_square] = self.piece.nopiece
+
         elif flag in {
             Move.rook_promotion_flag, Move.bishop_promotion_flag,
             Move.knight_promotion_flag, Move.queen_promotion_flag
@@ -79,11 +105,11 @@ class Board:
             self.board[end_square] = moving_piece
             self.board[start_square] = self.piece.nopiece
 
-        self.gamestate.active_color ^= 8
-        self.gamestate.inactive_color ^= 8
+        self.gamestate.active_color ^= self.gamestate.black_color
+        self.gamestate.inactive_color ^= self.gamestate.black_color
+        if self.gamestate.active_color == self.gamestate.black_color: self.gamestate.fullmoves += 1
         arbiterChecks(self)    
-
-
+        
 
     def castleMoveRook(self, from_sq, to_sq):
         rook = self.board[from_sq]
@@ -94,8 +120,9 @@ class Board:
     def enPassantHandler(self, moving_piece, end_square):
         offset = -8 if self.piece.getPieceColor(moving_piece) == self.piece.white else 8
         cap_sq = end_square + offset
+        captured_piece = self.board[cap_sq]  # get captured pawn before removal
         self.board[cap_sq] = self.piece.nopiece
-        self.piecelists[self.board[cap_sq]].removePiece(cap_sq)
+        self.piecelists[captured_piece].removePiece(cap_sq)
 
     def castleHandler(self, end_square):
         rook_moves = {6: (7, 5), 2: (0, 3), 62: (63, 61), 58: (56, 59)}
@@ -137,3 +164,49 @@ class Board:
             elif start_square == 60:
                 self.gamestate.black_queensidecastle_rights = False
                 self.gamestate.black_kingsidecastle_rights = False
+
+
+
+    def undoMove(self):
+        #print("UNDO MOVE CALLED")
+        if not self.move_history:
+            return
+
+        last = self.move_history.pop()
+        move = last["move"]
+        moved_piece = last["moved_piece"]
+        captured_piece = last["captured_piece"]
+        offset = -8 if last["active_color"] == self.gamestate.white_color else 8
+
+        end_square, start_square, flag = Move.moveDecode(move)
+
+        if flag == Move.en_passant_flag:
+            captured_pawn = self.piece.blackpawn if last["active_color"] == self.gamestate.white_color else self.piece.whitepawn
+            self.piecelists[moved_piece].movePiece(start_square, end_square)
+            self.piecelists[captured_pawn].addPiece(start_square + offset)
+            self.board[end_square] = moved_piece
+            self.board[start_square] = captured_piece
+            self.board[start_square + offset] = captured_pawn
+        
+        if flag == Move.castling_flag:
+            rook_undo_moves = {6: (5, 7), 2: (3, 0), 62: (61, 63), 58: (59, 56)}
+            self.castleMoveRook(*rook_undo_moves[start_square])
+
+        else:
+            self.piecelists[moved_piece].movePiece(start_square, end_square)
+            self.board[end_square] = moved_piece
+            self.board[start_square] = captured_piece
+
+        self.gamestate.active_color = last["active_color"]
+        self.gamestate.inactive_color = last["inactive_color"]
+        self.gamestate.halfmoves = last["halfmove_clock"]
+        self.gamestate.fullmoves = last["fullmove_clock"]
+        self.gamestate.enpassant_square = last["enpassant_square"]
+        self.gamestate.white_kingsidecastle_rights = last["castling_rights"][0]
+        self.gamestate.white_queensidecastle_rights = last["castling_rights"][1]
+        self.gamestate.black_kingsidecastle_rights = last["castling_rights"][2]
+        self.gamestate.black_queensidecastle_rights = last["castling_rights"][3]
+
+        #print("active color before undo: ", last["active_color"])
+        #print("WQ:", self.gamestate.white_queensidecastle_rights)
+        #print("WK:", self.gamestate.white_kingsidecastle_rights)

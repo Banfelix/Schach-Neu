@@ -3,13 +3,15 @@ from engine.board import Board
 from helpers.inputs import inputHandler
 from helpers.inputs import getPlayerColor
 from debugs import moveToAlgebraic
-
+from bot.bot import Bot
 
 
 
 def main():
+
     board = Board()
     player_color = getPlayerColor()
+    bot = Bot(player_color)
 
     print("player_color=", player_color)
     
@@ -50,30 +52,14 @@ def main():
             print("Legal moves:", len(move_list))
 
         else:   # Add bot here later on
-            legal = False
-            while not legal:
-                move = inputHandler(board) 
-
-                if move is False:
-                    print("Game stopped by user.")
-                    board.gamestate.running = False
-                    break  # Break out of the inner input loop (and outer will exit next cycle)
-
-                elif move is not None:
-                    print("Legal move input:", move)
-                    board.makeMove(move)
-                    board.printBoard()
-                    legal = True  # Valid move made, break loop
-
-                else:
-                    print("Illegal move or invalid input, try again.")
-
-
-
-
+            move = bot.chooseMove(board)
+            board.makeMove(move)
+            board.printBoard()
+            
+            
             board.loadLegalMoves(first_load)
             move_list = [moveToAlgebraic(move) for move in board.legal_moves]   # For debugging
-            print(' || '.join(move_list))            
+            print(' || '.join(move_list))
             print("Legal moves:", len(move_list))
 
 if __name__ == "__main__":
@@ -81,5 +67,5 @@ if __name__ == "__main__":
 
     #   cd "C:\Users\User\Desktop\Chess New Movegen"
     #   C:\Users\User\AppData\Local\Programs\Python\Python313\python.exe core\main.py
-    #  C:\Users\User\Desktop\Chess New Movegen>C:\Users\User\AppData\Local\Programs\Python\Python313\python.exe -m cProfile -s time core\main.py
+    #   C:\Users\User\Desktop\Chess New Movegen>C:\Users\User\AppData\Local\Programs\Python\Python313\python.exe -m cProfile -s time core\main.py
     
