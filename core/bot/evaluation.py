@@ -3,7 +3,7 @@ from engine.piece import Piece
 class Evaluation:
     def __init__(self):
         self.piece = Piece()
-
+        self.max_value = 100000
         self.values = { self.piece.nopiece: 0,
                         self.piece.pawn: 100,
                         self.piece.knight: 300,
@@ -15,7 +15,7 @@ class Evaluation:
         score = 0
         for piece in board.board:
             piece_type = self.piece.getPieceType(piece)
-            if self.piece.getPieceColor(piece) == board.gamestate.inactive_color:
+            if self.piece.getPieceColor(piece) == board.gamestate.active_color:
                 score += self.values.get(piece_type, 0)
             else:
                 score -= self.values.get(piece_type, 0)

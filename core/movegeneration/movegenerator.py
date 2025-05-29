@@ -34,7 +34,7 @@ class MoveGenerator:
         self.in_check = False
         self.in_double_check = False
         self.slider_check = False
-
+        print("Is in check ?: ", self.in_check )
         self.createOccupanciesBB()
         self.ennemyAttacks()
         self.getAllPinRays()
@@ -94,6 +94,9 @@ class MoveGenerator:
         move_bb = lookup_table[start_square][magic_index] &~ self.allied_occupancies_bb     
         return move_bb          
                     
+        
+
+        
 
     def ennemyAttacks(self):
         king_bb = 1 << self.active_king_square
@@ -105,8 +108,15 @@ class MoveGenerator:
                 square = piecelist[i]
 
                 if piece_type == self.board.piece.bishop:
-                    index = (self.all_occupancies_wo_ally_king_bb & bishop_moves_mask[square]) * bishop_magics[square] >> bishop_shifts[square]
+                    masked = self.all_occupancies_wo_ally_king_bb & bishop_moves_mask[square]
+                    index = (masked * bishop_magics[square]) >> bishop_shifts[square]
                     attacks = bishop_moves_lookup[square][index]
+
+                    '''
+                if piece_type == self.board.piece.bishop:
+                    index = ((self.all_occupancies_wo_ally_king_bb & bishop_moves_mask[square]) * bishop_magics[square] >> bishop_shifts[square])
+                    attacks = bishop_moves_lookup[square][index]
+                    '''
 
                 elif piece_type == self.board.piece.rook:
                     index = (self.all_occupancies_wo_ally_king_bb & rook_moves_mask[square]) * rook_magics[square] >> rook_shifts[square]

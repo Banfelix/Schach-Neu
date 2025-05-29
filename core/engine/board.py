@@ -5,6 +5,7 @@ from engine.move import Move
 from helpers.fen import loadFEN
 from movegeneration.movegenerator import MoveGenerator
 from engine.arbiter import arbiterChecks
+from debugs import moveToAlgebraic
 
 class Board:
     def __init__(self):
@@ -13,7 +14,13 @@ class Board:
         self.board = [self.piece.nopiece] * 64
         self.legal_moves = []
         self.piece_count = 0
+        self.position_history = []
         self.move_history = []
+
+        self.unicode_piece_map = {
+            0: "·", 
+            1: "♟", 2: "♞", 3: "♝", 4: "♜", 5: "♕", 6: "♚",
+            9: "♙", 10: "♘", 11: "♗", 12: "♖", 13: "q", 14: "♔"}
 
         self.piecelists = {p: PieceList() for p in [
             self.piece.whitepawn, self.piece.whiteknight, self.piece.whitebishop,
@@ -22,31 +29,33 @@ class Board:
             self.piece.blackrook, self.piece.blackqueen, self.piece.blackking]}
 
         loadFEN(self)
+        self.loadLegalMoves()
         self.printBoard()
 
 
-    def loadLegalMoves(self, first_load):
+    def loadLegalMoves(self):
         self.legal_moves.clear()
         MoveGenerator(self)
-        if not first_load:
-            arbiterChecks(self)
 
     def printBoard(self):
+        transformed_moves = [moveToAlgebraic(move) for move in self.legal_moves],
         debug_info = [self.gamestate.fullmoves, self.gamestate.halfmoves, len(self.legal_moves), 
-                    self.gamestate.white_kingsidecastle_rights, self.gamestate.white_queensidecastle_rights, self.gamestate.black_kingsidecastle_rights,
-                    self.gamestate.black_queensidecastle_rights,"debug info"]
-        debug_info_name = ["fullmoves: ", "halfmoves: ", "number of legal moves: ", "WK castleright: ","WQ castleright: ","BK castleright: ","BQ castleright: ","debug info"]
+                    self.piecelists[5].occupied_squares, self.piecelists[1].occupied_squares, self.move_history,
+                    self.board[35], self.gamestate.active_color]
+        debug_info_name = ["fullmoves: ", "halfmoves: ", "number of legal moves: ", "White Queen Occupancies:","White pawn occupancies: ","Move history: ","Square number 35: ","Active Color:"]
         i = 0
+        #print("Moves in the position:",transformed_moves)
         for rank in range(7, -1, -1):
             row = f"{rank + 1}    "
             for file in range(8):
                 idx = rank * 8 + file
                 piece = self.board[idx]
-                symbol = self.piece.pieceToSymbol(piece) if piece else "-"
+                symbol = symbol = self.unicode_piece_map.get(piece, "?")
                 row += symbol + " "
             print(row, "    ",debug_info_name[i], debug_info[i])
             i += 1
         print("\n     a b c d e f g h")
+
 
     def setPiece(self, square, piece):
         old_piece = self.board[square]
@@ -62,7 +71,9 @@ class Board:
         moving_piece = self.board[start_square]
         captured_piece = self.board[end_square]
 
-        self.move_history.append({
+        self.move_history.append((start_square, end_square))
+        self.position_history.append({
+            #"legal_moves": list(self.legal_moves),
             "move": move,
             "moved_piece": moving_piece,
             "captured_piece": captured_piece,
@@ -75,8 +86,9 @@ class Board:
                 self.gamestate.black_kingsidecastle_rights,
                 self.gamestate.black_queensidecastle_rights),
             "halfmove_clock": self.gamestate.halfmoves,
-            "fullmove_clock": self.gamestate.fullmoves})
-
+            "fullmove_clock": self.gamestate.fullmoves,
+            "running_game": self.gamestate.running})
+        
         self.updateCastlingRights(moving_piece, start_square)
 
         if flag == Move.en_passant_flag:
@@ -109,7 +121,9 @@ class Board:
         self.gamestate.inactive_color ^= self.gamestate.black_color
         if self.gamestate.active_color == self.gamestate.black_color: self.gamestate.fullmoves += 1
         arbiterChecks(self)    
-        
+        self.loadLegalMoves()
+        self.printBoard()
+        self.verifyBoardState()
 
     def castleMoveRook(self, from_sq, to_sq):
         rook = self.board[from_sq]
@@ -167,33 +181,61 @@ class Board:
 
 
 
-    def undoMove(self):
-        #print("UNDO MOVE CALLED")
-        if not self.move_history:
+    def unMakeMove(self):
+        self.move_history.pop()
+        print("UNDO MOVE CALLED")
+        if not self.position_history:
             return
 
-        last = self.move_history.pop()
+        last = self.position_history.pop() 
         move = last["move"]
         moved_piece = last["moved_piece"]
         captured_piece = last["captured_piece"]
         offset = -8 if last["active_color"] == self.gamestate.white_color else 8
 
         end_square, start_square, flag = Move.moveDecode(move)
+        
+        print("Remake move: ",start_square, "goes back to:", end_square)
 
-        if flag == Move.en_passant_flag:
+            
+        if flag == Move.castling_flag:
+            if start_square == 6:
+                rook_undo_moves = (5, 7)
+            elif start_square == 2:
+                rook_undo_moves = (3, 0)
+            elif start_square == 62:
+                rook_undo_moves = (61, 63)
+            else: 
+                rook_undo_moves = (59, 56)
+            self.castleMoveRook(rook_undo_moves[0], rook_undo_moves[1])
+        
+        if flag == Move.queen_promotion_flag:
+            promotion_piece = self.board[start_square]
+            self.undoPromotionHandler(promotion_piece, moved_piece, start_square, end_square, captured_piece)
+        
+        elif flag == Move.rook_promotion_flag:
+            promotion_piece = self.board[start_square]
+            self.undoPromotionHandler(promotion_piece, moved_piece, start_square, end_square, captured_piece)        
+        
+        elif flag == Move.bishop_promotion_flag:
+            promotion_piece = self.board[start_square]
+            self.undoPromotionHandler(promotion_piece, moved_piece, start_square, end_square, captured_piece)
+        
+        elif flag == Move.knight_promotion_flag:
+            promotion_piece = self.board[start_square]
+            self.undoPromotionHandler(promotion_piece, moved_piece, start_square, end_square, captured_piece)
+        
+        elif flag == Move.en_passant_flag:
             captured_pawn = self.piece.blackpawn if last["active_color"] == self.gamestate.white_color else self.piece.whitepawn
             self.piecelists[moved_piece].movePiece(start_square, end_square)
-            self.piecelists[captured_pawn].addPiece(start_square + offset)
             self.board[end_square] = moved_piece
             self.board[start_square] = captured_piece
+            self.piecelists[captured_pawn].addPiece(start_square + offset)
             self.board[start_square + offset] = captured_pawn
-        
-        if flag == Move.castling_flag:
-            rook_undo_moves = {6: (5, 7), 2: (3, 0), 62: (61, 63), 58: (59, 56)}
-            self.castleMoveRook(*rook_undo_moves[start_square])
 
         else:
             self.piecelists[moved_piece].movePiece(start_square, end_square)
+            if captured_piece: self.piecelists[captured_piece].addPiece(start_square)
             self.board[end_square] = moved_piece
             self.board[start_square] = captured_piece
 
@@ -206,7 +248,22 @@ class Board:
         self.gamestate.white_queensidecastle_rights = last["castling_rights"][1]
         self.gamestate.black_kingsidecastle_rights = last["castling_rights"][2]
         self.gamestate.black_queensidecastle_rights = last["castling_rights"][3]
-
+        self.gamestate.running = last["running_game"]
+        #self.legal_moves = last["legal_moves"]
+        self.loadLegalMoves()
+        self.verifyBoardState()
         #print("active color before undo: ", last["active_color"])
         #print("WQ:", self.gamestate.white_queensidecastle_rights)
         #print("WK:", self.gamestate.white_kingsidecastle_rights)
+
+    def undoPromotionHandler(self, promotion_piece, pawn ,start_square, end_square, captured_piece):
+        self.piecelists[promotion_piece].removePiece(start_square)
+        self.piecelists[pawn].addPiece(end_square)
+        if captured_piece: self.piecelists[captured_piece].addPiece(start_square)
+        self.board[start_square] = captured_piece
+        self.board[end_square] = pawn
+
+    def verifyBoardState(self):
+        for square in self.piecelists[1].occupied_squares:
+            if square != 0 and self.board[square] != 1:
+                raise ValueError(f"Desync at square {square}")

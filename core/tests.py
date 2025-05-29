@@ -16,7 +16,7 @@ def bitboardToChessboard(bb):                                   # Helper stuff, 
 
 
         
-bitboardToChessboard(1090921693184)
+bitboardToChessboard(11064376819712)
 
 '''
 def generate_rook_moves_mask():
