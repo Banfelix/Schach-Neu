@@ -9,16 +9,13 @@ from bot.bot import Bot
 
 def main():
 
-    board = Board()
+    board = Board("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1")
     player_color = getPlayerColor()
     bot = Bot(player_color)
-
+    board.printBoard()
     print("player_color=", player_color)
     
-    #first_load = True
     while board.gamestate.running:
-        #first_load = False
-
         if board.gamestate.active_color == player_color:
             legal = False
             while not legal:
@@ -43,7 +40,7 @@ def main():
         else:   # Add bot here later on
 
 
-            #'''
+            '''
             legal = False
             while not legal:
                 move = inputHandler(board) 
@@ -61,16 +58,16 @@ def main():
 
                 else:
                     print("Illegal move or invalid input, try again.")
-            #'''
+            '''
                      
             
-            '''
+            #'''
             move = bot.search(board)
             print("exited bot")
             board.makeMove(move)
-            #board.printBoard()
+            board.printBoard()
             
-            '''
+            #'''
 
 if __name__ == "__main__":
     main()

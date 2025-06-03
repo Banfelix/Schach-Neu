@@ -34,7 +34,6 @@ class MoveGenerator:
         self.in_check = False
         self.in_double_check = False
         self.slider_check = False
-        print("Is in check ?: ", self.in_check )
         self.createOccupanciesBB()
         self.ennemyAttacks()
         self.getAllPinRays()
@@ -86,7 +85,6 @@ class MoveGenerator:
             target_square = lsb.bit_length() - 1                                                                     # Get "pos" of LSB (so the index)
             self.board.legal_moves.append(Move(start_square, target_square).createEngineMove(Move.no_flags))
             legal_moves_bb &= legal_moves_bb - 1                                                                     # clear the LSB, the loop restarts
-   
 
     def getSliderBB(self, start_square, magics, shifts, move_mask, lookup_table):                                   # Returns bitboards for sliding piece movegeneration 
         relevant_occupancies = self.all_occupancies_bb & move_mask[start_square]                                    # With precalculated blocker setup from big lookup table
@@ -221,11 +219,15 @@ class MoveGenerator:
         if self.ally_color == 0:  # white
             empty_kingside_mask = 0b1100000
             empty_queenside_mask = 0b1110
+            kingside_danger_squares = 0b1100000
+            queenside_danger_squares = 0b1100
             kingside_rigths = self.board.gamestate.white_kingsidecastle_rights
             queenside_rigths = self.board.gamestate.white_queensidecastle_rights
-        else:
+        else:                   
             empty_kingside_mask = 0x6000000000000000
             empty_queenside_mask = 0xE00000000000000
+            kingside_danger_squares = 0x6000000000000000
+            queenside_danger_squares = 0xC00000000000000
             kingside_rigths = self.board.gamestate.black_kingsidecastle_rights
             queenside_rigths = self.board.gamestate.black_queensidecastle_rights
             
@@ -240,14 +242,14 @@ class MoveGenerator:
                     self.bitboardToMove(legal_moves_bb, start_square)
                     if kingside_rigths:                                                                                         # Check if the neccessary squares are empty and not attacked
                         if (self.empty_squares_bb & empty_kingside_mask) == empty_kingside_mask:                                # If legal, create the castle move
-                            if (not(self.ennemy_attacks_bb & empty_kingside_mask) and (not self.in_check)):
+                            if (not(self.ennemy_attacks_bb & kingside_danger_squares) and (not self.in_check)):
                                 move_obj = Move(start_square, start_square + 2)  
                                 encoded = move_obj.createEngineMove(Move.castling_flag)
                                 self.board.legal_moves.append(encoded)
 
                     if queenside_rigths:
                         if (self.empty_squares_bb & empty_queenside_mask) == empty_queenside_mask:  
-                            if (not(self.ennemy_attacks_bb & empty_queenside_mask) and (not self.in_check)): 
+                            if (not(self.ennemy_attacks_bb & queenside_danger_squares) and (not self.in_check)): 
                                 move_obj = Move(start_square, start_square - 2)  
                                 encoded = move_obj.createEngineMove(Move.castling_flag)
                                 self.board.legal_moves.append(encoded)
@@ -283,8 +285,8 @@ class MoveGenerator:
                     capture_bb = pawn_capture_black_mask[start_square] & (self.ennemy_occupancies_bb | en_passant_bb)
                 legal_moves_bb = legal_pushes | capture_bb                                                                              # Add capture moves
 
-                if self.in_check:                                                                                                       # Only moves that stop check from slider pieces
-                    legal_moves_bb &= self.check_ray
+                if self.in_check:                                                                                                       # Only moves that stop check from slider pieces or capture the checker
+                    legal_moves_bb &= (self.check_ray | (1 << self.checkers[0]))
 
                 ray_mask = self.getPinRay(start_square)
                 if ray_mask:
@@ -333,20 +335,22 @@ class MoveGenerator:
         is_legal = True                                                                               # Test for discovered check (simulate ray between king and enemy sliders for the new pseudo position
         for piece, piecelist in self.ennemy_piecelist.items():
             piece_type = self.board.piece.getPieceType(piece)
-            if piece_type not in (self.board.piece.rook, self.board.piece.queen):
+            if piece_type not in (self.board.piece.rook, self.board.piece.queen, self.board.piece.bishop):
                 continue
 
             for j in range(piecelist.num_pieces):
                 enemy_square = piecelist.occupied_squares[j]
                 ray = rays[self.active_king_square].get(enemy_square, 0)
 
-                if ray & (1 << (self.active_king_square + 1)) or  ray & (1 << (self.active_king_square - 1))!= 0:               # Check if it's a sliding attack and if the ray is empty after the capture
-                    is_legal = False
+                if ray:
+                    if ray & (new_occupancy &~(1 << enemy_square) ) == 0:               # Check if it's a sliding attack and if the ray is empty after the capture
+                        is_legal = False
+                        return is_legal
                     return is_legal
-                return is_legal
     
 
     def en_passant_check_evasion(self, start_square, target_square, direction):
         if len(self.checkers) == 1:
             if self.checkers[0] == self.board.gamestate.enpassant_square - direction or (1 << self.board.gamestate.enpassant_square) & self.check_ray != 0:
                 return True         # If a pawn is chekcing the king after adoublle push or an en passant capture would block a check ray returns true
+            else: return False

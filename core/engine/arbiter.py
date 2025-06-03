@@ -3,7 +3,7 @@
 def arbiterChecks(board):
         if not board.legal_moves:
             board.gamestate.running = False
-            print("Checkmate!" if board.gamestate.inCheck else "Draw: Stalemate")
+            #print("Checkmate!" if board.gamestate.inCheck else "Draw: Stalemate")
             return
 
         current_piece_count = pieceCount(board)
@@ -21,7 +21,7 @@ def arbiterChecks(board):
 
         if board.gamestate.halfmoves >= 50:
             board.gamestate.running = False
-            print("Draw: 50-move rule")
+            #print("Draw: 50-move rule")
 
 
 def pieceCount(board):
@@ -35,9 +35,9 @@ def pieceCount(board):
 
         if piece_count == 2:
             board.gamestate.running = False
-            print("Draw: Kings only")
+            #print("Draw: Kings only")
         elif piece_count == 3 and (knight_count == 1 or bishop_count == 1):
             board.gamestate.running = False
-            print("Draw: Insufficient material")
+            #print("Draw: Insufficient material")
 
         return piece_count

@@ -1,9 +1,8 @@
 
-from engine.piece import Piece                                                                                                # Example FENs "rnbqkbnr/pp1ppppp/8/2p5/4P3/8/PPPP1PPP/RNBQKBNR w KQkq c6 0 2" ,"pn7/8/8/2p5/4P3/8/PPP5/6N1 w KQkq c6 0 2"
+from engine.piece import Piece                                                     
 
-def loadFEN(board):
-    start_FEN =  "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"               #"1b4nR/3P4/7N/pP6/1B6/r7/4P3/8 w KQkq a6 0 2" #"8/8/8/p7/8/8/8/4K2R w KQkq c6 0 2"
-
+def loadFEN(board, fen_string):
+    start_FEN = fen_string
     parts = start_FEN.strip().split()                                   # Splitting the FEN string into it's parts 
                                                                         
     piece_placement = parts[0]                                  
@@ -24,7 +23,7 @@ def loadFEN(board):
             if char.isdigit():                                  # If there is a digit (Blank space in FEN notation) skip those files
                 file += int(char)
             else:
-                piece = Piece().symbolToPiece(char)             # If there is a piece character transform char to interior piece notation (integer)
+                piece = board.piece.symbolToPiece(char)             # If there is a piece character transform char to interior piece notation (integer)
                 square_index = rank * 8 + file
                 board.setPiece(square_index, piece)             # Give the piece and its square index to board.setPiece
                 file += 1
