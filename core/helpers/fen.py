@@ -48,3 +48,56 @@ def algebraicToIndex(square):                                   # Calcualtes the
     file = ord(square[0]) - ord('a')
     rank = int(square[1]) - 1
     return rank * 8 + file
+
+
+def getFEN(board):
+    piece_map = {
+        board.piece.whitepawn: 'P', board.piece.whiteknight: 'N',
+        board.piece.whitebishop: 'B', board.piece.whiterook: 'R',
+        board.piece.whitequeen: 'Q', board.piece.whiteking: 'K',
+        board.piece.blackpawn: 'p', board.piece.blackknight: 'n',
+        board.piece.blackbishop: 'b', board.piece.blackrook: 'r',
+        board.piece.blackqueen: 'q', board.piece.blackking: 'k',
+        board.piece.nopiece: ''
+    }
+
+    # 1. Piece placement
+    rows = []
+    for rank in range(7, -1, -1):
+        row = ''
+        empty = 0
+        for file in range(8):
+            square = rank * 8 + file
+            piece = board.board[square]
+            if piece == board.piece.nopiece:
+                empty += 1
+            else:
+                if empty > 0:
+                    row += str(empty)
+                    empty = 0
+                row += piece_map.get(piece, '?')
+        if empty > 0:
+            row += str(empty)
+        rows.append(row)
+    board_part = "/".join(rows)
+
+    # 2. Active color
+    color_part = 'w' if board.gamestate.active_color == 0 else 'b'
+
+    # 3. Castling rights
+    rights = ''
+    if board.gamestate.white_kingsidecastle_rights:
+        rights += 'K'
+    if board.gamestate.white_queensidecastle_rights:
+        rights += 'Q'
+    if board.gamestate.black_kingsidecastle_rights:
+        rights += 'k'
+    if board.gamestate.black_queensidecastle_rights:
+        rights += 'q'
+    castling_part = rights if rights else '-'
+
+    # 4. En passant target
+    ep_part = "-"
+
+
+    return f"{board_part} {color_part} {castling_part} {ep_part}"
